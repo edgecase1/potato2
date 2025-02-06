@@ -7,6 +7,7 @@
 #include <time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <grp.h>
 
 #include "userlist.h"
 #include "user.h"
@@ -89,7 +90,7 @@ create_user()
 }
 
 void
-shell(int stdin, int stdout)
+shell()
 {
      char *argv[] = { NULL, NULL, NULL, NULL };
      struct stat st = {0};
@@ -137,7 +138,7 @@ shell(int stdin, int stdout)
 }
 
 void
-login(int stdin, int stdout)
+login()
 {
      char input_username[USERNAME_LENGTH];
      char* input_password;
@@ -177,7 +178,7 @@ logout()
 }
 
 void
-change_name(int stdin, int stdout)
+change_name()
 {
      char input_username[USERNAME_LENGTH];
          
@@ -224,7 +225,6 @@ main(int argc, char** argv)
      char buf[255];
      char user[100];
      char password[100];
-     t_server *server;
      int client;
 
      init();
@@ -232,12 +232,8 @@ main(int argc, char** argv)
 
      start_server();
 
-     while((client = server->next_client())) // command line loop
+     while(client = next_client()) // command line loop
      {
-	  int stdin = stdin;
-	  int stdout = stdout;
-	  int stderr = stderr;
-
           fprintf(stdout, "\ncmd> ");
           if(fgets(command, sizeof(command), stdin) == NULL) break;
           command[strcspn(command, "\n")] = 0x00;

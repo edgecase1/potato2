@@ -5,6 +5,8 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 
+#include "sock.h"
+
 #define PORT 222
 #define BACKLOG 5
 #define MAXCONN 100
