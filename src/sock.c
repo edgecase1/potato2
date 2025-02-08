@@ -16,6 +16,7 @@ struct sockaddr_in server_addr;
 
 int start_server() // returns the listening socket
 {
+    int option = 1;
     server_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (server_fd == -1) {
         perror("Socket creation failed");
@@ -25,6 +26,8 @@ int start_server() // returns the listening socket
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = INADDR_ANY;
     server_addr.sin_port = htons(PORT);
+
+    setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option));
 
     if (bind(server_fd, (struct sockaddr*)&server_addr, sizeof(server_addr)) == -1) {
         perror("Bind failed");
@@ -62,4 +65,9 @@ void stop_server()
 {
     // you need to close the client_fds yourself
     close(server_fd);
+}
+
+void close_client(int client_fd)
+{
+    shutdown(STDOUT_FILENO, SHUT_WR);
 }

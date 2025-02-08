@@ -11,10 +11,9 @@ char *str2md5(const char *str, int length) {
     int n;
     MD5_CTX c;
     unsigned char digest[16];
-    char *out = (char*)malloc(33);
+    char *out = (char*)malloc(90); // md5 plus null terminator for snprintf
 
     MD5_Init(&c);
-
     while (length > 0) {
         if (length > 512) {
             MD5_Update(&c, str, 512);
@@ -24,11 +23,10 @@ char *str2md5(const char *str, int length) {
         length -= 512;
         str += 512;
     }
-
     MD5_Final(digest, &c);
 
     for (n = 0; n < 16; ++n) {
-        snprintf(&(out[n*2]), 16*2, "%02x", (unsigned int)digest[n]);
+        snprintf(&(out[n*2]), 16*2+1, "%02x", (unsigned int)digest[n]);
     }
 
     return out;
@@ -53,7 +51,10 @@ t_user* new_user(char* username, char* password)
 int
 check_password(t_user* user, char* password)
 {
-	return (strncmp(user->password_hash, str2md5(password, strlen(password)), 32) == 0);
+    return (0 == strncmp(
+                        user->password_hash, 
+		        str2md5(password, strlen(password)), 
+			32)); // md5 length
 }
 
 void
@@ -62,7 +63,7 @@ print_user(t_user* user)
      printf("user(name='%s' id=%d gid=%d home='%s' shell='%s')\n", 
 		     user->name, 
 		     user->id, 
-			 user->gid, 
+	             user->gid, 
 		     user->home, 
 		     user->shell);
 }
@@ -76,31 +77,31 @@ t_user* parse_userlist_list(char* line)
 	token = strtok(line, ":");
 	while(token != NULL)
 	{
-		switch(column)
-		{
-		    case 0: // name
-				strcpy(parsed_user->name, token);
-				break;
-		    case 1: // hash
-				strncpy(parsed_user->password_hash, token, 32);
-				break;
-		    case 2: // id
-				parsed_user->id = atoi(token);
-		        break;
-			case 3: // group id
-				parsed_user->gid = atoi(token);
-		    case 4: // home
-				strcpy(parsed_user->home, token);
-				break;
-		    case 5: // shell
-				strcpy(parsed_user->shell, token);
-				break;
-		    default:
-				free(parsed_user);
-				return NULL;
-		}
-		token = strtok(NULL, ":");
-		column++;
+	    switch(column)
+	    {
+	   	    case 0: // name
+	   		strcpy(parsed_user->name, token);
+	   		break;
+	   	    case 1: // hash
+	   		strncpy(parsed_user->password_hash, token, 32);
+	   		break;
+	   	    case 2: // id
+	   		parsed_user->id = atoi(token);
+	   		parsed_user->gid = atoi(token);
+	   	        break;
+	   	    // TODO gid
+	   	    case 3: // home
+	   		strcpy(parsed_user->home, token);
+	   		break;
+	   	    case 4: // shell
+	   		strcpy(parsed_user->shell, token);
+	   		break;
+	   	    default:
+	   		free(parsed_user);
+	   		return NULL;
+	   }
+	   token = strtok(NULL, ":");
+	   column++;
 	}
 	return parsed_user;
 }
