@@ -143,7 +143,6 @@ create_user()
 static int
 child_func(void *arg)
 {
-    char *argv[] = {"/bin/sh", NULL};  // Arguments to pass to execve
     char *envp[] = {NULL};             // Environment variables
     struct stat st = {0};
     t_user* user = session.logged_in_user;
@@ -181,8 +180,8 @@ child_func(void *arg)
          return ; 
     };
 
-    execve("/bin/sh", argv, envp);     // Execute shell
-    printf("done\n");
+    char* args[] = {user->shell, 0};
+    execve(args[0], args, envp);     // Execute shell
 }
 
 /*

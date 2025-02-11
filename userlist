@@ -4,4 +4,3 @@ mario:5e455c58e29cce3c164506ee28f72ccc:10001:/home/mario:/usr/sbin/nologin
 alberto:x:10002:/home/alberto:/usr/bin/rbash
 livero:x:1003:/home/livero:/usr/bin/rbash
 emil:202cb962ac59075b964b07152d234b70:10004:/home/emil:/bin/sh
-reini:202cb962ac59075b964b07152d234b70:10005:/home/reini:/usr/bin/rbash
