@@ -20,6 +20,8 @@
 #define errExit(msg)    do { perror(msg); exit(EXIT_FAILURE); \
                         } while (0)
 
+#define STACK_SIZE (1024*1024)
+
 struct _session
 {
      t_user* logged_in_user;
@@ -141,6 +143,10 @@ create_user()
 static int
 child_func(void *arg)
 {
+    char *argv[] = {"/bin/sh", NULL};  // Arguments to pass to execve
+    char *envp[] = {NULL};             // Environment variables
+    struct stat st = {0};
+    t_user* user = session.logged_in_user;
 
     // remount proc to see the current pid namespace in /proc
     if (mount("proc", "/proc", "proc", 0, NULL) == -1)
@@ -148,23 +154,6 @@ child_func(void *arg)
         errExit("mount");
     }
 
-    char *argv[] = {"/bin/sh", NULL};  // Arguments to pass to execve
-    char *envp[] = {NULL};             // Environment variables
-
-    execve("/bin/sh", argv, envp);     // Execute shell
-    printf("done\n");
-}
-
-int test(void *arg)
-{
-    char **args = arg;
-    char *envp = { 0 };
-    struct stat st = {0};
-    t_user* user = session.logged_in_user;
-
-    exit(1);
-
-    fprintf(stderr, "args %s", args[0]);
     // home dir
     if (stat(user->home, &st) == -1) // home must exist
     {
@@ -192,16 +181,26 @@ int test(void *arg)
          return ; 
     };
 
-    char *argv[] = {"/bin/sh", 0};
-    execve(argv[0], argv, envp);
+    execve("/bin/sh", argv, envp);     // Execute shell
+    printf("done\n");
 }
+
+/*
+int test(void *arg)
+{
+    char **args = arg;
+    char *envp = { 0 };
+    exit(1);
+}
+*/
 
 void
 shell()
 {
     char *argv[3];
-
+    char child_stack[STACK_SIZE];
     t_user* user = session.logged_in_user;
+    pid_t pid = -1;
 
     fprintf(stdout, "starting shell '%s'. Name '%s' User ID %d, home '%s' ...\n", 
        	     user->shell, 
@@ -210,13 +209,18 @@ shell()
        	     user->home); 
     fflush(stdout);
 
-
-    // start shell
-    argv[0] = "/bin/sh"; // TODO user->shell;
-    argv[1] = "/bin/sh";
-    
-
-    wait(); // till the termination of the shell
+    // need to fork for unshare
+    // https://lwn.net/Articles/531419/
+    if ((pid = clone(child_func,         // called routine
+        	     child_stack + STACK_SIZE,      // stack top
+        	     CLONE_NEWPID | SIGCHLD,  //
+        	     NULL)) == -1)            // function argument
+    {
+        perror("clone failed.");
+        exit(1);
+    }
+    printf("child pid is %d\n", pid);
+    waitpid(pid, NULL, 0);
 }
 
 void
@@ -303,9 +307,6 @@ not_implemented()
     puts("not implemented");
 }
 
-#define STACK_SIZE (1024*1024)
-static char child_stack[STACK_SIZE];
-
 void handle_client()
 {
     char command[255];
@@ -371,30 +372,7 @@ void handle_client()
         else if(strncmp(command, "shell", 5) == 0)
         {
             if(! is_authenticated()) continue;
-            pid_t pid = -1;
-            // need to fork for unshare
-	    // https://lwn.net/Articles/531419/
-            char *stack = mmap(NULL,
-                               STACK_SIZE,
-                               PROT_READ | PROT_WRITE,  // rw-
-                               MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, // private stack, not shared
-                               -1,
-                               0);
-            if (stack == MAP_FAILED)
-            {
-                perror("mmap");
-                exit(1);
-            }
-            if ((pid = clone(child_func,         // called routine
-                	     child_stack + STACK_SIZE,      // stack top
-                	     CLONE_NEWPID | SIGCHLD,  //
-                	     NULL)) == -1)            // function argument
-            {
-                perror("clone failed.");
-                exit(1);
-            }
-            printf("child pid is %d\n", pid);
-	    waitpid(pid, NULL, 0);
+            shell();
         }
         else if(strncmp(command, "changepw", 8) == 0)
         {
