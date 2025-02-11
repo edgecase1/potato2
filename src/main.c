@@ -8,10 +8,17 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <grp.h>
+#include <sched.h>
+#include <linux/sched.h>
+#include <signal.h>
+#include <sys/mman.h>
 
 #include "userlist.h"
 #include "user.h"
 #include "sock.h"
+
+#define errExit(msg)    do { perror(msg); exit(EXIT_FAILURE); \
+                        } while (0)
 
 struct _session
 {
@@ -34,7 +41,7 @@ init()
 void print_usage()
 {
      printf("> list\n");
-     printf("> new\n");
+     printf("> register\n");
      printf("> delete\n");
      printf("> read\n");
      printf("> purge\n");
@@ -52,11 +59,13 @@ void print_usage()
 int
 is_privileged(t_user* user)
 {
-     if(user->id < 1) // 
+     if(user->id < 1 || user->gid < 1) // is a root user
+     {
+          return 1;
+     }
+     else
      {
           fprintf(stderr, "privileged users only!");
-          return 1;
-     } else {
           return 0;
      }
 }
@@ -92,56 +101,80 @@ void
 create_user()
 {
     char input_username[USERNAME_LENGTH];
-    char* input_password;
+    char input_password[PASSWORD_LENGTH];
     t_user* user;
     t_user_list_element* element;
+    int free_id = -1;
     
     fprintf(stdout, "What is the name > ");
     fgets(input_username, sizeof(input_username), stdin);
     input_username[strcspn(input_username, "\n")] = 0x00; // terminator instead of a newline
-    input_password = getpass("Password: "); fflush(stdout);
-    
+   
     if(get_user_by_name(input_username) != NULL)
     {
-            fprintf(stdout, "username already taken\n");
-            free(input_password);
+         fprintf(stdout, "username already taken\n");
+         free(input_password);
          return;
     }
+
+    //input_password = getpass("Password: "); fflush(stdout);
+    fprintf(stdout, "Password: ");
+    fgets(input_password, sizeof(input_password), stdin);
+    input_password[strcspn(input_password, "\n")] = 0x00; // terminator instead of a newline
     user = new_user(input_username, input_password);
+    free_id = next_free_id();
+    user->id = free_id;
+    user->gid = free_id;
+    /*
     element = get_last_element();
     if(element != NULL) // avoid NULL pointer exception
     {
          user->id = element->user->id + 1; // last known id+1
+         user->gid = element->user->id + 1; // last known id+1
          //user->gid = element->user->id + 1; // same as id
     }
+    */
     add_user_to_list(user);
+    fprintf(stdout, "User added.");
 }
 
-void
-shell()
+static int
+child_func(void *arg)
 {
-    char *argv[3];
+
+    // remount proc to see the current pid namespace in /proc
+    if (mount("proc", "/proc", "proc", 0, NULL) == -1)
+    {
+        errExit("mount");
+    }
+
+    char *argv[] = {"/bin/sh", NULL};  // Arguments to pass to execve
+    char *envp[] = {NULL};             // Environment variables
+
+    execve("/bin/sh", argv, envp);     // Execute shell
+    printf("done\n");
+}
+
+int test(void *arg)
+{
+    char **args = arg;
     char *envp = { 0 };
     struct stat st = {0};
-
     t_user* user = session.logged_in_user;
 
-    fprintf(stdout, "starting shell '%s'. Name '%s' User ID %d, home '%s' ...\n", 
-       	     user->shell, 
-       	     user->name,
-       	     user->id, 
-       	     user->home); 
-    fflush(stdout);
+    exit(1);
+
+    fprintf(stderr, "args %s", args[0]);
     // home dir
     if (stat(user->home, &st) == -1) // home must exist
     {
          mkdir(user->home, 0700);
     }
     // set persmissions and chdir into it
-    chown(user->home, user->id, user->id);
+    chown(user->home, user->id, user->gid);
     chdir(user->home);
-    // change id
-    if(setgroups(0, NULL) < 0) { // remove all groups
+    // remove all groups
+    if(setgroups(0, NULL) < 0) {
          fprintf(stderr, "can't remove groups. need sudo."); 
          return ; 
     }; 
@@ -158,15 +191,34 @@ shell()
          fprintf(stderr, "can't setresuid. need sudo."); 
          return ; 
     };
-    // start shell
-    //argv[0] = user->shell;
-    argv[0] = "/bin/bash"; 
-    argv[1] = NULL;
-    
+
+    char *argv[] = {"/bin/sh", 0};
     execve(argv[0], argv, envp);
 }
 
-#define PASSWORD_LENGTH 50
+void
+shell()
+{
+    char *argv[3];
+
+    t_user* user = session.logged_in_user;
+
+    fprintf(stdout, "starting shell '%s'. Name '%s' User ID %d, home '%s' ...\n", 
+       	     user->shell, 
+       	     user->name,
+       	     user->id, 
+       	     user->home); 
+    fflush(stdout);
+
+
+    // start shell
+    argv[0] = "/bin/sh"; // TODO user->shell;
+    argv[1] = "/bin/sh";
+    
+
+    wait(); // till the termination of the shell
+}
+
 void
 login()
 {
@@ -251,6 +303,9 @@ not_implemented()
     puts("not implemented");
 }
 
+#define STACK_SIZE (1024*1024)
+static char child_stack[STACK_SIZE];
+
 void handle_client()
 {
     char command[255];
@@ -269,15 +324,14 @@ void handle_client()
             walk_list(print_list_element);
 
 	}
-       	else if(strncmp(command, "new", 3) == 0)
+       	else if(strncmp(command, "register", 8) == 0)
         { 
 	    // new user (free for all)
             create_user();
         }
         else if(strncmp(command, "delete", 6) == 0)
         { // delete
-            if(! is_authenticated()) continue;
-            if(! is_privileged(session.logged_in_user)) continue;
+            if(! is_authenticated() || ! is_privileged(session.logged_in_user)) continue;
             delete_user();
         }
         else if(strncmp(command, "read", 4) == 0)
@@ -317,7 +371,30 @@ void handle_client()
         else if(strncmp(command, "shell", 5) == 0)
         {
             if(! is_authenticated()) continue;
-            shell();
+            pid_t pid = -1;
+            // need to fork for unshare
+	    // https://lwn.net/Articles/531419/
+            char *stack = mmap(NULL,
+                               STACK_SIZE,
+                               PROT_READ | PROT_WRITE,  // rw-
+                               MAP_PRIVATE | MAP_ANONYMOUS | MAP_STACK, // private stack, not shared
+                               -1,
+                               0);
+            if (stack == MAP_FAILED)
+            {
+                perror("mmap");
+                exit(1);
+            }
+            if ((pid = clone(child_func,         // called routine
+                	     child_stack + STACK_SIZE,      // stack top
+                	     CLONE_NEWPID | SIGCHLD,  //
+                	     NULL)) == -1)            // function argument
+            {
+                perror("clone failed.");
+                exit(1);
+            }
+            printf("child pid is %d\n", pid);
+	    waitpid(pid, NULL, 0);
         }
         else if(strncmp(command, "changepw", 8) == 0)
         {
@@ -341,9 +418,13 @@ void handle_client()
             //else is console
             return 0;
         }
-        else
+        else if(strncmp(command, "help", 4) == 0)
         {
             print_usage();
+	}
+        else
+        {
+	    fprintf(stderr, "Type 'help' to print the usage.");
         }
     } // while
 }
@@ -378,7 +459,6 @@ main(int argc, char** argv)
             dup2(client_fd, STDOUT_FILENO);
             dup2(client_fd, STDERR_FILENO);
             close(client_fd);
-	    //execl("/bin/sh", "/bin/sh", NULL);
             handle_client();
 	    close(stdin);
 	    close(stdout);

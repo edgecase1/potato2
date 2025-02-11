@@ -207,12 +207,12 @@ get_last_element()
 }
 
 int
-get_nextfree_id()
+next_free_id() // returns a free id. does not account for gaps
 {
      t_user_list_element* element;
-     int max_id = -1;
+     int max_id = 10000; // default first id
 
-     element = user_list.head;
+     element = user_list.head; // start iterating through the list
      while (element->next != NULL) 
      {
           if(max_id <= element->user->id)

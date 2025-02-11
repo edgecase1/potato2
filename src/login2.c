@@ -34,18 +34,20 @@ char *str2md5(const char *str, int length) {
 
 t_user* new_user(char* username, char* password)
 {
-	char* hash;
-	t_user* user;
+    char* hash;
+    t_user* user;
 
     user = (t_user *) malloc(sizeof(t_user));
-	strcpy(user->name, username);
+    user->id = -1;
+    user->gid = -1;
+    strcpy(user->name, username);
     sprintf(user->home, "/home/%s", username);
     strcpy(user->shell, "/usr/bin/rbash");
     hash = str2md5(password, strlen(password));
     strncpy(user->password_hash, hash, 32);
     free(hash);
 
-	return user;
+    return user;
 }
 
 int
@@ -70,40 +72,40 @@ print_user(t_user* user)
 
 t_user* parse_userlist_list(char* line)
 {
-	char* token;
-	int column = 0;
-	t_user* parsed_user = (t_user *)malloc(sizeof(t_user));
-	
-	token = strtok(line, ":");
-	while(token != NULL)
-	{
-	    switch(column)
-	    {
-	   	    case 0: // name
-	   		strcpy(parsed_user->name, token);
-	   		break;
-	   	    case 1: // hash
-	   		strncpy(parsed_user->password_hash, token, 32);
-	   		break;
-	   	    case 2: // id
-	   		parsed_user->id = atoi(token);
-	   		parsed_user->gid = atoi(token);
-	   	        break;
-	   	    // TODO gid
-	   	    case 3: // home
-	   		strcpy(parsed_user->home, token);
-	   		break;
-	   	    case 4: // shell
-	   		strcpy(parsed_user->shell, token);
-	   		break;
-	   	    default:
-	   		free(parsed_user);
-	   		return NULL;
-	   }
-	   token = strtok(NULL, ":");
-	   column++;
-	}
-	return parsed_user;
+    char* token;
+    int column = 0;
+    t_user* parsed_user = (t_user *)malloc(sizeof(t_user));
+    
+    token = strtok(line, ":");
+    while(token != NULL)
+    {
+        switch(column)
+        {
+       	    case 0: // name
+                strcpy(parsed_user->name, token);
+		break;
+       	    case 1: // hash
+       		strncpy(parsed_user->password_hash, token, 32);
+       		break;
+       	    case 2: // id
+       		parsed_user->id = atoi(token);
+       		parsed_user->gid = atoi(token);
+       	        break;
+       	    // TODO gid
+       	    case 3: // home
+       		strcpy(parsed_user->home, token);
+       		break;
+       	    case 4: // shell
+       		strcpy(parsed_user->shell, token);
+       		break;
+       	    default:
+       		free(parsed_user);
+       		return NULL;
+       }
+       token = strtok(NULL, ":");
+       column++;
+    }
+    return parsed_user;
 }
 
 /*

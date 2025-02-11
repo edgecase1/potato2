@@ -1,6 +1,7 @@
 #pragma once
 
 #define USERNAME_LENGTH 255
+#define PASSWORD_LENGTH 50
 
 struct _user
 {
