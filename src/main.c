@@ -115,7 +115,6 @@ create_user()
     if(get_user_by_name(input_username) != NULL)
     {
          fprintf(stdout, "username already taken\n");
-         free(input_password);
          return;
     }
 
@@ -123,6 +122,7 @@ create_user()
     fprintf(stdout, "Password: ");
     fgets(input_password, sizeof(input_password), stdin);
     input_password[strcspn(input_password, "\n")] = 0x00; // terminator instead of a newline
+
     user = new_user(input_username, input_password);
     free_id = next_free_id();
     user->id = free_id;
@@ -167,9 +167,9 @@ child_func(void *arg)
          return ; 
     }; 
     // change the uid and gid
-    if(setresgid(user->gid, 
-                 user->gid, 
-                 user->gid) < 0) { 
+    if(setresgid(22222,  //user->gid
+                 22222, 
+                 22222) < 0) { 
          fprintf(stderr, "can't setresgid. need sudo.");
          return ; 
     }; 
@@ -284,10 +284,17 @@ change_name()
 void
 change_password()
 {
-    char* input_password;
+    //char* input_password;
+    //input_password = getpass("Password: "); fflush(stdout);
 
-    input_password = getpass("Password: "); fflush(stdout);
-    strncpy(session.logged_in_user->password_hash, str2md5(input_password, strlen(input_password)), 32); // error: password not hash 
+    char input_password[PASSWORD_LENGTH];
+    fprintf(stdout, "Password: ");
+    fgets(input_password, sizeof(input_password), stdin);
+    input_password[strcspn(input_password, "\n")] = 0x00; // terminator instead of a newline
+
+    strncpy(session.logged_in_user->password_hash, 
+            str2md5(input_password, strlen(input_password)), 
+	    32);
     fprintf(stdout, "Password changed.\n");
 }
 
@@ -409,9 +416,9 @@ void handle_client()
 int
 main(int argc, char** argv)
 {
-    int client_fd;
-    pid_t p;
-    int server_fd;
+    int client_fd = NULL;
+    pid_t pid = -1;
+    int server_fd = NULL;
 
     setbuf(stdout, NULL);
 
@@ -426,11 +433,11 @@ main(int argc, char** argv)
 
     while(client_fd = next_client()) // command line loop
     {
-	p = fork();
-        if(p<0) {
+	pid = fork();
+        if(pid < 0) {
             printf("fork error");
             break;
-        } else if (p == 0) { // child
+        } else if (pid == 0) { // child
             close(server_fd);
 	    dup2(client_fd, STDIN_FILENO);
             dup2(client_fd, STDOUT_FILENO);

@@ -123,7 +123,6 @@ read_list(char* path)
      size_t len = 0;
      ssize_t read;
      t_user* new_user;
-     int id = 10000; // restart id in a user range
 
      fp = fopen(path, "r");
      if(!fp)

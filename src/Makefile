@@ -3,7 +3,7 @@
 all: potato
 
 potato: main.c login2.c userlist.c sock.c
-	gcc -Wall -g -Og -o ../potato main.c login2.c userlist.c sock.c -lssl -lcrypto
+	gcc -Wall -Wdeprecated-declarations -Wunused-result -g -Og -o potato main.c login2.c userlist.c sock.c -lssl -lcrypto
 
 clean:
 	rm potato potato_sani potato_afl

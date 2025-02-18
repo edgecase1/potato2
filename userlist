@@ -1,4 +1,4 @@
-root:e2fc714c4727ee9395f324cd2e7f331f:0:/root:/bin/bash
+root:2f99191d04198a3f778043dda155ba0f:0:/root:/bin/bash
 peter:827ccb0eea8a706c4c34a16891f84e7b:10000:/home/peter:/usr/bin/rbash
 mario:5e455c58e29cce3c164506ee28f72ccc:10001:/home/mario:/usr/sbin/nologin
 alberto:x:10002:/home/alberto:/usr/bin/rbash
