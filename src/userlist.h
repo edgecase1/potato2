@@ -25,3 +25,4 @@ void read_list(char* path);
 void write_list(char* path);
 void purge_list();
 t_user_list_element* get_last_element();
+int next_free_id();

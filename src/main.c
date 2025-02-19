@@ -1,4 +1,5 @@
 
+#define GNU_SOURCE
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -12,6 +13,7 @@
 #include <linux/sched.h>
 #include <signal.h>
 #include <sys/mman.h>
+#include <sys/mount.h>
 
 #include "userlist.h"
 #include "user.h"
