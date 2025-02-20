@@ -4,6 +4,9 @@
 #include <string.h>
 #include <unistd.h>
 #include <arpa/inet.h>
+// waitpid
+#include <sys/types.h>
+#include <sys/wait.h>
 
 #include "sock.h"
 
@@ -14,8 +17,10 @@
 int server_fd;
 struct sockaddr_in server_addr;
 
-int start_server() // returns the listening socket
+int start_server(void (*handle_conn_func)()) // returns the listening socket
 {
+    int client_fd;
+    pid_t pid = -1;
     int option = 1;
     server_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (server_fd == -1) {
@@ -42,6 +47,30 @@ int start_server() // returns the listening socket
     }
 
     printf("Server listening on port %d...\n", PORT);
+
+    while(client_fd = next_client()) // command line loop
+    {
+	pid = fork();
+        if(pid < 0) {
+            printf("fork error");
+            break;
+        } else if (pid == 0) { // child
+            close(server_fd);
+	    dup2(client_fd, STDIN_FILENO);
+            dup2(client_fd, STDOUT_FILENO);
+            dup2(client_fd, STDERR_FILENO);
+            close(client_fd);
+            handle_conn_func();
+	    fclose(stdin);
+	    fclose(stdout);
+	    fclose(stderr);
+	    exit(0);
+        } else { // parent 
+            close(client_fd);
+	}
+	// Optionally, clean up zombie processes
+        while (waitpid(-1, NULL, WNOHANG) > 0);
+    }
 
     return server_fd;
 } 

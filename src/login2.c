@@ -70,43 +70,6 @@ print_user(t_user* user)
 		     user->shell);
 }
 
-t_user* parse_userlist_list(char* line)
-{
-    char* token;
-    int column = 0;
-    t_user* parsed_user = (t_user *)malloc(sizeof(t_user));
-    
-    token = strtok(line, ":");
-    while(token != NULL)
-    {
-        switch(column)
-        {
-       	    case 0: // name
-                strcpy(parsed_user->name, token);
-		break;
-       	    case 1: // hash
-       		strncpy(parsed_user->password_hash, token, 32);
-       		break;
-       	    case 2: // id
-       		parsed_user->id = atoi(token);
-       		parsed_user->gid = atoi(token);
-       	        break;
-       	    // TODO gid
-       	    case 3: // home
-       		strcpy(parsed_user->home, token);
-       		break;
-       	    case 4: // shell
-       		strcpy(parsed_user->shell, token);
-       		break;
-       	    default:
-       		free(parsed_user);
-       		return NULL;
-       }
-       token = strtok(NULL, ":");
-       column++;
-    }
-    return parsed_user;
-}
 
 /*
 int main(int argc, char* argv)
