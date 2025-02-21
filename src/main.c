@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <assert.h>
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -13,11 +14,36 @@
 #include "sock.h"
 #include "func.h"
 
+#define MODE_SERVER 1
+#define MODE_CONSOLE 2
+
 void
 init()
 {
      init_userlist();
      logout();
+}
+
+void print_usage()
+{
+     printf("> register\t\tcreate a temporary user\n");
+     printf("> login\t\tauthenticate a user\n");
+     printf("> logout\t\tdestroy the current session\n");
+     printf("\n");
+     printf("functions as authenticated user\n");
+     printf("> whoami\t\tshow user id\n");
+     printf("> changepw\t\tchange the password\n");
+     printf("> changename\t\tchange the username\n");
+     printf("> shell\t\tstart the shell in the user profile\n");
+     printf("\n");
+     printf("system functions:\n");
+     printf("> list\t\tshow all registered users\n");
+     printf("> delete\t\tdelete a user\n");
+     printf("> read\t\tparse the 'userlist' file\n");
+     printf("> write\t\twrite out the 'userlist' file\n");
+     printf("> purge\t\tempty the userlist\n");
+     printf("> debug\t\tshow the userlist data structure\n");
+     printf("> exit\t\tclose the program/connection\n");
 }
 
 void handle_client()
@@ -35,6 +61,7 @@ void handle_client()
 
         if(strncmp(command, "list", 4) == 0)
         { // list
+            if(! is_authenticated()) continue;
             walk_list(print_list_element);
 
 	}
@@ -70,7 +97,6 @@ void handle_client()
         else if(strncmp(command, "debug", 5) == 0)
         {
             if(! is_authenticated()) continue;
-            if(! is_privileged()) continue;
             walk_list(print_debug);
         }
         else if(strncmp(command, "login", 5) == 0)
@@ -123,10 +149,42 @@ void handle_client()
 int
 main(int argc, char** argv)
 {
-    setbuf(stdout, NULL);
+    int mode = -1;
+
+    if(argc == 2 && strncmp("server", argv[1], 6) == 0)
+    {
+        mode = MODE_SERVER;
+    }
+    else if(argc == 2 && strncmp("console", argv[1], 7) == 0)
+    {
+        mode = MODE_CONSOLE;
+    }
+    else
+    {
+	printf("%s console\n", argv[0]);
+	printf("%s server\n", argv[0]);
+	exit(1);
+    }
+
+    assert(mode != -1);
+    printf("starting up (pid %d)\n", getpid());
+    setbuf(stdout, NULL); // unbuffered stdout
     init();
     read_list("userlist");
-    start_server(&handle_client);
-    stop_server();
+    switch(mode)
+    {
+       case MODE_SERVER:
+          start_server(&handle_client);
+          stop_server();
+          break;
+       case MODE_CONSOLE:
+          handle_client();
+          break;
+       default:
+	  printf("error\n");
+	  exit(2);
+	  break;
+    }
+
     return 0;
 }

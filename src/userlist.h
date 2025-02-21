@@ -28,3 +28,4 @@ t_user_list_element* get_last_element();
 int next_free_id();
 t_user* parse_userlist_list(char* line);
 void init_userlist();
+t_user* new_user(char* username, char* password);

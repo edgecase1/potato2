@@ -49,23 +49,6 @@ is_privileged()
      }
 }
 
-void print_usage()
-{
-     printf("> list\n");
-     printf("> register\n");
-     printf("> delete\n");
-     printf("> read\n");
-     printf("> purge\n");
-     printf("> debug\n");
-     printf("\n");
-     printf("> login\n");
-     printf("> logout\n");
-     printf("\n");
-     printf("> shell\n");
-     printf("> whoami\n");
-     printf("> changepw\n");
-     printf("> changename\n");
-}
 
 void 
 delete_user()
@@ -230,6 +213,10 @@ whoami()
     if(session.logged_in_user != NULL)
     {
          print_user(session.logged_in_user);
+    }
+    else
+    {
+	 puts("not logged in.");
     }
 }
 

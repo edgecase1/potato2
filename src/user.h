@@ -14,9 +14,7 @@ struct _user
 } typedef t_user;
 
 void print_user(t_user* user);
-t_user* parse_userlist_list(char* line);
 int check_password(t_user* user, char* password);
 char *str2md5(const char *str, int length);
-t_user* new_user(char* username, char* password);
 int is_authenticated();
 int is_privileged();
