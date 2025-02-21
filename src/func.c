@@ -183,7 +183,8 @@ change_name()
     char input_username[USERNAME_LENGTH];
         
     fprintf(stdout, "What is the name > ");
-    fgets(input_username, sizeof(input_username), stdin);
+    //fgets(input_username, sizeof(input_username), stdin);
+    fscanf(stdin, "%s", input_username); // TODO security
     input_username[strcspn(input_username, "\n")] = 0x00; // terminator instead of a newline
 
     strncpy(session.logged_in_user->name, input_username, strlen(input_username)+1);

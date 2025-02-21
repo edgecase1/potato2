@@ -1,6 +1,6 @@
 #pragma once
 
-#define USERNAME_LENGTH 255
+#define USERNAME_LENGTH 50
 #define PASSWORD_LENGTH 50
 
 struct _user
