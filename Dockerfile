@@ -16,4 +16,4 @@ COPY --from=builder /build/potato .
 COPY userlist .
 
 EXPOSE 222
-ENTRYPOINT ["./potato", "server"]
+CMD ["./potato", "server"]
