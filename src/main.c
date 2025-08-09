@@ -13,9 +13,11 @@
 #include "user.h"
 #include "sock.h"
 #include "func.h"
+#include "http.h"
 
 #define MODE_SERVER 1
 #define MODE_CONSOLE 2
+#define MODE_HTTP 3
 
 void
 init()
@@ -159,10 +161,15 @@ main(int argc, char** argv)
     {
         mode = MODE_CONSOLE;
     }
+    else if(argc == 2 && strncmp("http", argv[1], 4) == 0)
+    {
+        mode = MODE_HTTP;
+    }
     else
     {
 	printf("%s console\n", argv[0]);
 	printf("%s server\n", argv[0]);
+	printf("%s http\n", argv[0]);
 	exit(1);
     }
 
@@ -179,6 +186,9 @@ main(int argc, char** argv)
           break;
        case MODE_CONSOLE:
           handle_client();
+          break;
+       case MODE_HTTP:
+          http_server();
           break;
        default:
 	  printf("error\n");
