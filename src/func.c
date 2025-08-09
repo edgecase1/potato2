@@ -9,13 +9,7 @@
 
 #include "userlist.h"
 #include "runr.h"
-
-
-struct _session
-{
-     t_user* logged_in_user;
-     time_t start_time;
-} typedef t_session;
+#include "session.h"
 
 // globals
 t_session session;

@@ -13,17 +13,14 @@
 
 #define PORT 8080
 #define BUF_SIZE 4096
+
+#include "session.h"
 #define MAX_SESSIONS 100
 
-#define LEN_SESSION 16
-
-typedef struct {
-    char session_id[LEN_SESSION];
-} Session;
-
-Session sessions[MAX_SESSIONS];
 int session_count = 0;
 pthread_mutex_t session_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+t_session sessions[MAX_SESSIONS];
 
 void generate_session_id(char *buffer, size_t len) {
     const char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -96,8 +93,6 @@ int get_form_value(const char *body, const char *key, char* value) {
 int
 check_user(char* username, char* password)
 {
-    printf("user %s\n", username);
-    printf("pass %s\n", password);
     return (strcmp(username, "user") == 0) && (strcmp(password, "pass") == 0);
 }
 
@@ -106,8 +101,6 @@ void handle_login(int client_sock, const char *body) {
     char password[32]; 
     get_form_value(body, "username", username);
     get_form_value(body, "password", password);
-    printf("Xuser %s\n", username);
-    printf("Xpass %s\n", password);
 
     if (check_user(username, password) == 1) {
         // Accept any credentials
