@@ -130,14 +130,14 @@ int
 login(char* input_username, char* input_password)
 {
     t_user* user;
-    LOG("searching for user ...\n");
+    LOG("searching for user");
     if((user = get_user_by_name(input_username)) == NULL)
     {
         LOG("no such user\n");
         return -1;
     }
 
-    LOG("checking password ...\n");
+    LOG("checking password");
     if(check_password(user, input_password) == 1)
     {
         LOG("You are authorized.\n");
@@ -148,7 +148,7 @@ login(char* input_username, char* input_password)
     }
     else
     {
-    	LOG("Authentication failure\n");
+    	LOG("Authentication failure");
 	return -1;
     }
 }
