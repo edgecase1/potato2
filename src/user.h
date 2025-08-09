@@ -16,5 +16,4 @@ struct _user
 void print_user(t_user* user);
 int check_password(t_user* user, char* password);
 char *str2md5(const char *str, int length);
-int is_authenticated();
-int is_privileged();
+//int is_authenticated();

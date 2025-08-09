@@ -12,99 +12,12 @@
 #include "runr.h"
 #include "session.h"
 
-// globals
-t_session session;
-
-int
-is_authenticated()
-{
-    if(session.logged_in_user == NULL)
-    {
-        fprintf(stderr, "not logged in.\n");
-        return 0;
-    }
-    else
-    {
-        return 1;
-    }
-}
-
-int
-is_privileged()
-{
-    t_user* user = session.logged_in_user;
-     if(user->id < 1 || user->gid < 1) // is a root user
-     {
-          return 1;
-     }
-     else
-     {
-          fprintf(stderr, "privileged users only!");
-          return 0;
-     }
-}
-
-
-void 
-delete_user()
-{
-    int id;
-
-    walk_list(print_list_element);
-    fprintf(stdout, "Which one? > ");
-    scanf("%d", &id);
-    if(!delete_user_by_id(id)) {
-         fprintf(stderr, "not found.\n");
-    }
-}
 
 void
-create_user()
-{
-    char input_username[USERNAME_LENGTH];
-    char input_password[PASSWORD_LENGTH];
-    t_user* user;
-    t_user_list_element* element;
-    int free_id = -1;
-    
-    fprintf(stdout, "What is the name > ");
-    fgets(input_username, sizeof(input_username), stdin);
-    input_username[strcspn(input_username, "\n")] = 0x00; // terminator instead of a newline
-   
-    if(get_user_by_name(input_username) != NULL)
-    {
-         fprintf(stdout, "username already taken\n");
-         return;
-    }
-
-    //input_password = getpass("Password: "); fflush(stdout);
-    fprintf(stdout, "Password: ");
-    fgets(input_password, sizeof(input_password), stdin);
-    input_password[strcspn(input_password, "\n")] = 0x00; // terminator instead of a newline
-
-    user = new_user(input_username, input_password);
-    free_id = next_free_id();
-    user->id = free_id;
-    user->gid = free_id;
-    /*
-    element = get_last_element();
-    if(element != NULL) // avoid NULL pointer exception
-    {
-         user->id = element->user->id + 1; // last known id+1
-         user->gid = element->user->id + 1; // last known id+1
-         //user->gid = element->user->id + 1; // same as id
-    }
-    */
-    add_user_to_list(user);
-    fprintf(stdout, "User added.");
-}
-
-void
-shell()
+shell(t_user* user)
 {
     t_runr_args arg;
     char child_stack[STACK_SIZE];
-    t_user* user = session.logged_in_user;
     pid_t pid = -1;
 
     fprintf(stdout, "starting shell '%s'. Name '%s' User ID %d, home '%s' ...\n", 
@@ -126,8 +39,28 @@ shell()
     printf("child died\n");
 }
 
+int create_user(char* input_username, char* input_password)
+{
+    t_user* user;
+    t_user_list_element* element;
+    int free_id = -1;
+    
+    if(get_user_by_name(input_username) != NULL)
+    {
+         LOG("username already taken");
+         return -1;
+    }
+    user = new_user(input_username, input_password);
+    free_id = next_free_id();
+    user->id = free_id;
+    user->gid = free_id;
+
+    add_user_to_list(user);
+    return user->id;
+}
+
 int
-login(char* input_username, char* input_password)
+login(t_session* session, char* input_username, char* input_password)
 {
     t_user* user;
     LOG("searching for user");
@@ -141,8 +74,8 @@ login(char* input_username, char* input_password)
     if(check_password(user, input_password) == 1)
     {
         LOG("You are authorized.\n");
-        session.logged_in_user = user;
-        session.start_time = time(0);
+        session->logged_in_user = user;
+        session->start_time = time(0);
         chdir(user->home);
 	return user->id;
     }
@@ -154,49 +87,34 @@ login(char* input_username, char* input_password)
 }
 
 void
-logout()
+logout(t_session* session)
 {
-    session.logged_in_user = NULL;
-    session.start_time = 0;
+    session = NULL;
+    session->start_time = 0;
 }
 
 void
-change_name()
+change_name(t_user* user, char* input_username)
 {
-    char input_username[USERNAME_LENGTH];
-        
-    fprintf(stdout, "What is the name > ");
-    //fgets(input_username, sizeof(input_username), stdin);
-    fscanf(stdin, "%s", input_username); // TODO security
-    input_username[strcspn(input_username, "\n")] = 0x00; // terminator instead of a newline
-
-    strncpy(session.logged_in_user->name, input_username, strlen(input_username)+1);
+    strncpy(user->name, input_username, strlen(input_username)+1);
     fprintf(stdout, "Name changed.\n");
 }
 
 void
-change_password()
+change_password(t_user* user, char* input_password)
 {
-    //char* input_password;
-    //input_password = getpass("Password: "); fflush(stdout);
-
-    char input_password[PASSWORD_LENGTH];
-    fprintf(stdout, "Password: ");
-    fgets(input_password, sizeof(input_password), stdin);
-    input_password[strcspn(input_password, "\n")] = 0x00; // terminator instead of a newline
-
-    strncpy(session.logged_in_user->password_hash, 
+    strncpy(user->password_hash, 
             str2md5(input_password, strlen(input_password)), 
 	    32);
     fprintf(stdout, "Password changed.\n");
 }
 
 void
-whoami()
+whoami(t_user* user)
 {
-    if(session.logged_in_user != NULL)
+    if(user != NULL)
     {
-         print_user(session.logged_in_user);
+         print_user(user);
     }
     else
     {
