@@ -7,6 +7,7 @@
 #include <time.h>
 #include <sys/wait.h>
 
+#include "logger.h"
 #include "userlist.h"
 #include "runr.h"
 #include "session.h"
@@ -125,42 +126,30 @@ shell()
     printf("child died\n");
 }
 
-void
-login()
+int
+login(char* input_username, char* input_password)
 {
-    char input_username[USERNAME_LENGTH];
-    //char* input_password;
-    char input_password[PASSWORD_LENGTH];
     t_user* user;
-
-    fputs("Welcome!\n", stdout);
-    fputs("username: ", stdout); fflush(stdout);
-    fgets(input_username, USERNAME_LENGTH, stdin);
-    input_username[strcspn(input_username, "\n")] = 0x00;
-    // if terminal
-    //input_password = getpass("Password: "); fflush(stdout);
-    fputs("password: ", stdout); fflush(stdout);
-    fgets(input_password, PASSWORD_LENGTH, stdin);
-    input_password[strcspn(input_password, "\n")] = 0x00;
-
-    printf("searching for user ...\n");
+    LOG("searching for user ...\n");
     if((user = get_user_by_name(input_username)) == NULL)
     {
-        fprintf(stdout, "no such user\n");
-        return;
+        LOG("no such user\n");
+        return -1;
     }
 
-    printf("checking password ...\n");
+    LOG("checking password ...\n");
     if(check_password(user, input_password) == 1)
     {
-        fprintf(stdout, "You are authorized.\n");
+        LOG("You are authorized.\n");
         session.logged_in_user = user;
         session.start_time = time(0);
         chdir(user->home);
+	return user->id;
     }
     else
     {
-    	fprintf(stderr, "Authentication failure\n");
+    	LOG("Authentication failure\n");
+	return -1;
     }
 }
 

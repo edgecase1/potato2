@@ -9,11 +9,13 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 
+#include "logger.h"
 #include "userlist.h"
 #include "user.h"
 #include "sock.h"
 #include "func.h"
 #include "http.h"
+#include "console_server.h"
 
 #define MODE_SERVER 1
 #define MODE_CONSOLE 2
@@ -103,7 +105,7 @@ void handle_client()
         }
         else if(strncmp(command, "login", 5) == 0)
         {
-            login();
+            console_login();
         }
         else if(strncmp(command, "logout", 6) == 0)
         {
