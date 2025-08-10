@@ -40,3 +40,4 @@ if __name__ == "__main__":
     session = login("peter", "12345")
     if session:
         run_command(session, "uname -a")
+        run_command(session, "ps faux")
