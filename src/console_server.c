@@ -6,11 +6,11 @@
 #include "func.h"
 #include "userlist.h"
 
-#define is_privileged() _is_privileged(session.logged_in_user)
-#define is_authenticated() _is_authenticated(session.logged_in_user)
+#define is_privileged() _is_privileged(console_session->logged_in_user)
+#define is_authenticated() _is_authenticated(console_session->logged_in_user)
 
 // globals
-t_session session;
+t_session *console_session;
 
 int
 _is_privileged(t_user* user)
@@ -57,8 +57,11 @@ console_login()
     fgets(input_password, PASSWORD_LENGTH, stdin);
     input_password[strcspn(input_password, "\n")] = 0x00;
 
-    if(login(&session, input_username, input_password) != -1)
+    t_session tmp_session;
+    if(login(&tmp_session, input_username, input_password) != -1)
     {
+	create_session(&tmp_session);
+	console_session = &tmp_session;
         fprintf(stdout, "Authentication successful.\n");
     }
     else
@@ -70,7 +73,7 @@ console_login()
 void
 console_logout()
 {
-    logout(&session);
+    logout(console_session);
 }
 
 void
@@ -106,7 +109,7 @@ console_change_name()
     //fgets(input_username, sizeof(input_username), stdin);
     fscanf(stdin, "%s", input_username); // TODO security
     input_username[strcspn(input_username, "\n")] = 0x00; // terminator instead of a newline
-    change_name(session.logged_in_user, input_username);
+    change_name(console_session->logged_in_user, input_username);
 }
 
 void
@@ -116,7 +119,7 @@ console_change_password()
     fprintf(stdout, "Password: ");
     fgets(input_password, sizeof(input_password), stdin);
     input_password[strcspn(input_password, "\n")] = 0x00; // terminator instead of a newline
-    change_password(session.logged_in_user, input_password);
+    change_password(console_session->logged_in_user, input_password);
 }
 
 void
@@ -140,13 +143,13 @@ console_list_users()
 void
 console_shell()
 {
-    shell(session.logged_in_user);
+    shell(console_session->logged_in_user);
 }
 
 void
 console_whoami()
 {
-    whoami(session.logged_in_user);
+    whoami(console_session->logged_in_user);
 }
 
 void

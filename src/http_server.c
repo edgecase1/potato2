@@ -13,42 +13,10 @@
 
 #define PORT 8080
 #define BUF_SIZE 4096
+#define LEN_SESSION 16
 
-#include "session.h"
-#define MAX_SESSIONS 100
-
-int session_count = 0;
-pthread_mutex_t session_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-t_session sessions[MAX_SESSIONS];
-
-void generate_session_id(char *buffer, size_t len) {
-    const char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    for (size_t i = 0; i < len - 1; ++i) {
-        buffer[i] = charset[rand() % (sizeof(charset) - 1)];
-    }
-    buffer[len - 1] = '\0';
-}
-
-void add_session(const char *session_id) {
-    pthread_mutex_lock(&session_mutex);
-    if (session_count < MAX_SESSIONS) {
-        strncpy(sessions[session_count++].session_id, session_id, LEN_SESSION-1);
-    }
-    pthread_mutex_unlock(&session_mutex);
-}
-
-int is_valid_session(const char *session_id) {
-    pthread_mutex_lock(&session_mutex);
-    for (int i = 0; i < session_count; ++i) {
-        if (strcmp(sessions[i].session_id, session_id) == 0) {
-            pthread_mutex_unlock(&session_mutex);
-            return 1;
-        }
-    }
-    pthread_mutex_unlock(&session_mutex);
-    return 0;
-}
+#include "func.h"
+#include "logger.h"
 
 char hex_to_char(char high, char low) {
     int hi = (isdigit(high)) ? high - '0' : tolower(high) - 'a' + 10;
@@ -90,27 +58,27 @@ int get_form_value(const char *body, const char *key, char* value) {
     return 0;
 }
 
-int
-check_user(char* username, char* password)
-{
-    return (strcmp(username, "user") == 0) && (strcmp(password, "pass") == 0);
-}
-
 void handle_login(int client_sock, const char *body) {
     char username[32];
     char password[32]; 
     get_form_value(body, "username", username);
     get_form_value(body, "password", password);
+    char* session_id;
 
-    if (check_user(username, password) == 1) {
+    t_session* tmp_session = get_tmp_session();
+    LOG("login attempt");
+    if (login(tmp_session, username, password) != -1) {
         // Accept any credentials
-        char session_id[LEN_SESSION];
-        generate_session_id(session_id, sizeof(session_id));
-        add_session(session_id);
+    	LOG("login via HTTP successful");
+        session_id = create_session(tmp_session);
+    	LOG("session active");
 
         char response[256];
-        snprintf(response, sizeof(response),
-            "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n%s", session_id);
+        snprintf(response,
+		 sizeof(response),
+                 "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n%s", 
+		 session_id);
+	LOG("sending response");
         send(client_sock, response, strlen(response), 0);
     } else {
         char *resp = "HTTP/1.1 400 Bad Request\r\n\r\nAuth failed";
@@ -123,13 +91,16 @@ void handle_run(int client_sock, const char *body) {
     get_form_value(body, "session_id", session_id);
     char command[255];
     get_form_value(body, "command", command);
+    LOG("run command request");
 
     if (!session_id || !command || !is_valid_session(session_id)) {
+        LOG("auth via session failed");
         char *resp = "HTTP/1.1 403 Forbidden\r\n\r\nInvalid session or missing command";
         send(client_sock, resp, strlen(resp), 0);
         return;
     }
 
+    LOG("auth via session successful");
     char cmd_output[1024] = {0};
     FILE *fp = popen(command, "r");
     if (fp) {
@@ -137,6 +108,7 @@ void handle_run(int client_sock, const char *body) {
         pclose(fp);
     }
 
+    LOG("command finished creating response");
     char response[1500];
     snprintf(response, sizeof(response),
         "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n%s", cmd_output);
@@ -164,6 +136,7 @@ void *handle_http_client(void *arg) {
         char *resp = "HTTP/1.1 404 Not Found\r\n\r\n";
         send(client_sock, resp, strlen(resp), 0);
     }
+    LOG("Closing socket");
 
     close(client_sock);
     return NULL;
