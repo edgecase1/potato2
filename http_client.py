@@ -1,6 +1,6 @@
 import requests
 
-BASE_URL = "http://localhost:8080"
+BASE_URL = "http://localhost"
 
 def login(username, password):
     print("[*] Logging in...")
@@ -40,4 +40,5 @@ if __name__ == "__main__":
     session = login("peter", "12345")
     if session:
         run_command(session, "uname -a")
+        run_command(session, "id")
         run_command(session, "ps faux")

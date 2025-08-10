@@ -11,7 +11,7 @@
 #include <time.h>
 #include <ctype.h>
 
-#define PORT 8080
+#define PORT 80
 #define BUF_SIZE 4096
 #define LEN_SESSION 16
 
@@ -142,7 +142,7 @@ void *handle_http_client(void *arg) {
     return NULL;
 }
 
-int http_server() {
+void *http_server(void *arg) {
     srand(time(NULL));
     int server_fd, new_socket;
     struct sockaddr_in address;
@@ -169,6 +169,4 @@ int http_server() {
         pthread_create(&t, NULL, handle_http_client, pclient);
         pthread_detach(t);
     }
-
-    return 0;
 }

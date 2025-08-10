@@ -5,6 +5,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <assert.h>
+#include <pthread.h>
 
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -61,7 +62,10 @@ main(int argc, char** argv)
           handle_client();
           break;
        case MODE_HTTP:
-          http_server();
+          pthread_t t;
+          pthread_create(&t, NULL, &http_server, NULL);
+          pthread_detach(t);
+          handle_client();
           break;
        default:
 	  printf("error\n");

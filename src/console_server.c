@@ -141,6 +141,12 @@ console_list_users()
 }
 
 void
+console_list_sessions()
+{
+    print_sessions();
+}
+
+void
 console_shell()
 {
     shell(console_session->logged_in_user);
@@ -168,6 +174,7 @@ print_usage()
      printf("system functions:\n");
      printf("> list\t\tshow all registered users\n");
      printf("> delete\t\tdelete a user\n");
+     printf("> sessions\t\tlist the sessions\n");
      printf("> read\t\tparse the 'userlist' file\n");
      printf("> write\t\twrite out the 'userlist' file\n");
      printf("> purge\t\tempty the userlist\n");
@@ -256,6 +263,10 @@ handle_client()
         {
             if(! is_authenticated()) continue;
             console_whoami();
+        }
+        else if(strncmp(command, "sessions", 8) == 0)
+        {
+            console_list_sessions();
         }
         else if(strncmp(command, "exit", 4) == 0)
         {

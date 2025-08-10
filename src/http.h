@@ -1,2 +1,2 @@
 
-int http_server();
+void *http_server(void *arg);

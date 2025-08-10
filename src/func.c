@@ -12,7 +12,6 @@
 #include "runr.h"
 #include "session.h"
 
-
 void
 shell(t_user* user)
 {

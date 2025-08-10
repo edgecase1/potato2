@@ -13,3 +13,4 @@ void destroy_session(t_session* session);
 t_session* get_session_by_id(char* id);
 int is_valid_session(const char *session_id);
 t_session* get_tmp_session();
+void print_sessions();

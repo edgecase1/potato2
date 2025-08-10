@@ -67,3 +67,15 @@ void destroy_session(t_session* session)
 int is_valid_session(const char *session_id) {
     return get_session_by_id(session_id) != NULL;
 }
+
+void
+print_sessions()
+{
+    for (int i = 0; i < MAX_SESSIONS; i++) {
+	if(sessions[i] == NULL || sessions[i]->session_id == NULL) {
+	    continue;
+	} else {
+            fprintf(stdout, "sess %s",  sessions[i]->session_id);
+	}
+    }
+}
