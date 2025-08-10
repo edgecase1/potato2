@@ -1,7 +1,7 @@
 
 docker run --init \
 	   -ti \
-	   -p 222:222 \
+	   -p 80:80 \
 	   --cap-add=SYS_ADMIN \
 	   --security-opt seccomp=unconfined \
 	   --security-opt apparmor=unconfined \

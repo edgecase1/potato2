@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Login</title>
+</head>
+<body>
+  <h2>Login</h2>
+  <form id="myForm">
+    <label>
+      Username:
+      <input type="text" name="username" required />
+    </label>
+    <br /><br />
+    <label>
+      Password:
+      <input type="password" name="password" required />
+    </label>
+    <br /><br />
+    <button type="submit">Send</button>
+  </form>
+
+  <h3>Response:</h3>
+  <pre id="response"></pre>
+
+  <script>
+    document.getElementById('myForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      const form = e.target;
+      const formData = new URLSearchParams(new FormData(form));
+
+      fetch('/api/login', { // Change to your server endpoint
+        method: 'POST',
+	headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: formData
+      })
+        .then(res => res.text()) // or res.json() if JSON response
+        .then(text => {
+	    localStorage.setItem('session', text);
+            document.getElementById('response').textContent = "Authentication successful";
+        })
+        .catch(err => {
+          document.getElementById('response').textContent = 'Error: ' + err;
+        });
+    });
+  </script>
+</body>
+</html>

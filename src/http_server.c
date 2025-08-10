@@ -58,6 +58,22 @@ int get_form_value(const char *body, const char *key, char* value) {
     return 0;
 }
 
+char* read_file(const char *filename, size_t *size) {
+    FILE *f = fopen(filename, "rb");
+    if (!f) return NULL;
+    fseek(f, 0, SEEK_END);
+    long len = ftell(f);
+    rewind(f);
+    char *buf = malloc(len + 1);
+    if (!buf) { fclose(f); return NULL; }
+    fread(buf, 1, len, f);
+    buf[len] = '\0';
+    fclose(f);
+    if (size) *size = len;
+    return buf;
+}
+
+
 void handle_login(int client_sock, const char *body) {
     char username[32];
     char password[32]; 
@@ -125,17 +141,31 @@ void *handle_http_client(void *arg) {
     char method[8], path[128];
     sscanf(buffer, "%s %s", method, path);
 
-    char *body = strstr(buffer, "\r\n\r\n");
-    if (body) body += 4;
-
-    if (strcmp(path, "/api/login") == 0 && strcmp(method, "POST") == 0) {
-        handle_login(client_sock, body);
-    } else if (strcmp(path, "/api/run") == 0 && strcmp(method, "POST") == 0) {
-        handle_run(client_sock, body);
-    } else {
-        char *resp = "HTTP/1.1 404 Not Found\r\n\r\n";
-        send(client_sock, resp, strlen(resp), 0);
+    if(strcmp(method, "GET")==0)
+    {
+	size_t size = 0;
+        char *file_contents = read_file("index.html", &size);
+        send(client_sock, file_contents, strlen(file_contents), 0);
     }
+    else if(strcmp(method, "POST")==0)
+    {
+        char *body = strstr(buffer, "\r\n\r\n");
+        if (body) body += 4;
+
+        if (strcmp(path, "/api/login") == 0 && strcmp(method, "POST") == 0) {
+            handle_login(client_sock, body);
+        } else if (strcmp(path, "/api/run") == 0 && strcmp(method, "POST") == 0) {
+            handle_run(client_sock, body);
+        } else {
+            char *resp = "HTTP/1.1 404 Not Found\r\n\r\n";
+            send(client_sock, resp, strlen(resp), 0);
+        }
+    }
+    else
+    {
+	LOG("error method");
+    }
+
     LOG("Closing socket");
 
     close(client_sock);
