@@ -75,7 +75,12 @@ print_sessions()
 	if(sessions[i] == NULL || sessions[i]->session_id == NULL) {
 	    continue;
 	} else {
-            fprintf(stdout, "sess %s",  sessions[i]->session_id);
+	    t_session *sess = sessions[i];
+	    t_user *user = sessions[i]->logged_in_user;
+            fprintf(stdout, "sess %s user: %s (%d)\n",  
+			    sess->session_id,
+			    user->name,
+			    user->id);
 	}
     }
 }
