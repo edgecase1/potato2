@@ -1,6 +1,8 @@
 # Potato2
 This is a test program to better understand linux, container technologies, stack and heap corruption.
 
+You can run the program using `./potato console` or `./potato http`, `./potato server`.
+
 ## Functions
 
 ```
