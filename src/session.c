@@ -48,7 +48,7 @@ char* add_session(t_session* tmp_session)
 	sessions[session_count] = tmp_session;
     }
     pthread_mutex_unlock(&session_mutex);
-    LOG("sessioni ready.");
+    LOG("session ready.");
     return sessions[session_count]->session_id;
 }
 
@@ -73,18 +73,27 @@ int is_valid_session(const char *session_id) {
 }
 
 void
+print_session(t_session *sess)
+{
+    t_user *user = sess->logged_in_user;
+    fprintf(stdout, "sess %s user: %s (%d)\n",  
+		    sess->session_id,
+		    user->name,
+		    user->id);
+}
+
+void
 print_sessions()
 {
     for (int i = 0; i < MAX_SESSIONS; i++) {
-	if(sessions[i] == NULL || sessions[i]->session_id == NULL) {
+	if(sessions[i] == NULL || sessions[i]->logged_in_user == NULL)
+	{
 	    continue;
-	} else {
-	    t_session *sess = sessions[i];
-	    t_user *user = sessions[i]->logged_in_user;
-            fprintf(stdout, "sess %s user: %s (%d)\n",  
-			    sess->session_id,
-			    user->name,
-			    user->id);
+	}
+	else
+	{
+	    print_session(sessions[i]);
+           
 	}
     }
 }

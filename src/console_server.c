@@ -157,6 +157,12 @@ console_whoami()
 }
 
 void
+print_console_session()
+{
+    print_session(console_session);
+}
+
+void
 print_usage()
 {
      printf("> register\t\tcreate a temporary user\n");
@@ -266,9 +272,12 @@ handle_client()
         {
             if(! is_authenticated()) continue;
             console_whoami();
+            print_console_session();
         }
         else if(strncmp(command, "sessions", 8) == 0)
         {
+            //if(! is_authenticated()) continue;
+            //if(! is_privileged()) continue;
             console_list_sessions();
         }
         else if(strncmp(command, "exit", 4) == 0)

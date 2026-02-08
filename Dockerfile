@@ -13,7 +13,7 @@ WORKDIR /app
 COPY --from=builder /build/potato .
 #COPY --from=builder rootfs .
 COPY userlist .
-COPY index.html .
+COPY index.html login.html run.html .
 
 EXPOSE 222
 ENTRYPOINT ["./potato"]

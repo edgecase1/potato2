@@ -15,3 +15,4 @@ int is_valid_session(const char *session_id);
 void print_sessions();
 char* add_session(t_session* tmp_session);
 void generate_session_id(char *buffer);
+void print_session(t_session *sess);

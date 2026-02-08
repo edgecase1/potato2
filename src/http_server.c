@@ -102,50 +102,108 @@ void handle_login(int client_sock, const char *body) {
     }
 }
 
-void handle_run(int client_sock, const char *body) {
-    char session_id[LEN_SESSION];
-    get_form_value(body, "session_id", session_id);
-    char command[255];
-    get_form_value(body, "command", command);
-    LOG("run command request");
+int parse_cookie(const char *req, const char *name, char *out, size_t out_sz)
+{
+    const char *c = strstr(req, "Cookie:");
+    if (!c) return -1;
+    c += 7;
 
-    if (!command) {
-        LOG("auth via session failed");
-        char *resp = "HTTP/1.1 403 Forbidden\r\n\r\nInvalid session or missing command";
-        send(client_sock, resp, strlen(resp), 0);
-        return;
+    while (*c) {
+        while (*c == ' ' || *c == ';') c++;
+        if (!strncmp(c, name, strlen(name)) && c[strlen(name)] == '=') {
+            c += strlen(name) + 1;
+            size_t n = strcspn(c, ";\r\n");
+            if (n >= out_sz) n = out_sz - 1;
+            memcpy(out, c, n);
+            out[n] = 0;
+            return 0;
+        }
+        c = strchr(c, ';');
+        if (!c) break;
     }
+    return -1;
+}
 
-    LOG("auth via session successful");
-    char cmd_output[1024] = {0};
+t_session*
+authenticate(char* req)
+{
+    char session_id[LEN_SESSION];
+    int size = -1;
+
+    if(parse_cookie(req, "session", session_id, size) == -1)
+    {
+        LOG("no session cookie found.");
+	return NULL;
+    }
+    
+    fprintf(stderr, "cookie session_id=%s\n", 
+		    session_id);
+
+    t_session* sess = get_session_by_id(session_id);
+    if(!sess) 
+    {
+        LOG("session not found");
+	return NULL;
+    }
+    
+    LOG("auth via session successful.");
+    fprintf(stderr, "Session ID %s user %d\n", 
+		    sess->session_id, 
+		    sess->logged_in_user->id);
+    return sess;
+}
+
+void handle_run(int client_sock, const char *body) {
+    LOG("run command request");
+    char command[255];
+    char cmd_output[4096] = {0};
+    get_form_value(body, "command", command);
+    fprintf(stderr, "command=%s", 
+		    command);
     FILE *fp = popen(command, "r");
-    if (fp) {
+    if (fp)
+    {
         fread(cmd_output, 1, sizeof(cmd_output) - 1, fp);
         pclose(fp);
     }
-
     LOG("command finished creating response");
-    char response[1500];
+    char response[5000];
     snprintf(response, sizeof(response),
         "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n%s", cmd_output);
     send(client_sock, response, strlen(response), 0);
 }
 
-void *handle_http_client(void *arg) {
+void* handle_http_client(void *arg) {
     int client_sock = *(int *)arg;
     free(arg);
 
     char buffer[BUF_SIZE] = {0};
-    read(client_sock, buffer, BUF_SIZE - 1);
-
+    read(client_sock, buffer, BUF_SIZE - 1); // maybe too small
     char method[8], path[128];
     sscanf(buffer, "%s %s", method, path);
+    fprintf(stderr, "method: %s path %s\n",
+		    method,
+		    path);
 
     if(strcmp(method, "GET")==0)
     {
-	size_t size = 0;
-        char *file_contents = read_file("index.html", &size);
-        send(client_sock, file_contents, strlen(file_contents), 0);
+        if (strcmp(path, "/login") == 0)
+	{
+            LOG("GET /login");
+	    size_t size = 0;
+            char *file_contents = read_file("login.html", &size);
+            send(client_sock, file_contents, strlen(file_contents), 0);
+            close(client_sock);
+            return NULL;
+        }
+	else if (strcmp(path, "/run") == 0)
+	{
+	    size_t size = 0;
+            char *file_contents = read_file("run.html", &size);
+            send(client_sock, file_contents, strlen(file_contents), 0);
+            close(client_sock);
+            return NULL;
+	}
     }
     else if(strcmp(method, "POST")==0)
     {
@@ -154,20 +212,29 @@ void *handle_http_client(void *arg) {
 
         if (strcmp(path, "/api/login") == 0 && strcmp(method, "POST") == 0) {
             handle_login(client_sock, body);
+            close(client_sock);
+            return NULL;
         } else if (strcmp(path, "/api/run") == 0 && strcmp(method, "POST") == 0) {
+            t_session *sess = authenticate(buffer);
+            if (!sess ||                 // no session found
+                !sess->logged_in_user)   // no logged in user
+            {
+                LOG("auth via session failed");
+                char *resp = "HTTP/1.1 403 Forbidden\r\n\r\nInvalid session";
+                send(client_sock, resp, strlen(resp), 0);
+                close(client_sock);
+                return NULL;
+            }
             handle_run(client_sock, body);
-        } else {
-            char *resp = "HTTP/1.1 404 Not Found\r\n\r\n";
-            send(client_sock, resp, strlen(resp), 0);
+            close(client_sock);
+            return NULL;
         }
     }
-    else
-    {
-	LOG("error method");
-    }
 
-    LOG("Closing socket");
-
+    // not found, no route
+    LOG("not found");
+    char *resp = "HTTP/1.1 404 Not Found\r\n\r\n";
+    send(client_sock, resp, strlen(resp), 0);
     close(client_sock);
     return NULL;
 }
