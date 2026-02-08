@@ -42,3 +42,4 @@ if __name__ == "__main__":
         run_command(session, "uname -a")
         run_command(session, "id")
         run_command(session, "ps faux")
+        run_command(session, "ls -la /")

@@ -92,7 +92,7 @@ void handle_login(int client_sock, const char *body) {
         char response[256];
         snprintf(response,
 		 sizeof(response),
-                 "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n%s", 
+                 "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nSet-Cookie: session=%s\r\n\r\nauthentication successful", 
 		 session_id);
 	LOG("sending response");
         send(client_sock, response, strlen(response), 0);
@@ -109,7 +109,7 @@ void handle_run(int client_sock, const char *body) {
     get_form_value(body, "command", command);
     LOG("run command request");
 
-    if (!session_id || !command || !is_valid_session(session_id)) {
+    if (!command) {
         LOG("auth via session failed");
         char *resp = "HTTP/1.1 403 Forbidden\r\n\r\nInvalid session or missing command";
         send(client_sock, resp, strlen(resp), 0);

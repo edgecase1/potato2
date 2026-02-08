@@ -16,4 +16,4 @@ COPY userlist .
 COPY index.html .
 
 EXPOSE 222
-CMD ["./potato", "http"]
+ENTRYPOINT ["./potato"]
