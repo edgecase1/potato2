@@ -43,6 +43,12 @@ int create_user(char* input_username, char* input_password)
     t_user* user;
     t_user_list_element* element;
     int free_id = -1;
+
+    if(strlen(input_username) <= 0 || strlen(input_password) <= 0)
+    {
+         LOG("username or password empty");
+         return -1;
+    }
     
     if(get_user_by_name(input_username) != NULL)
     {
@@ -88,8 +94,9 @@ login(t_session* session, char* input_username, char* input_password)
 void
 logout(t_session* session)
 {
-    session = NULL;
-    session->start_time = 0;
+    //session = NULL;
+    session->logged_in_user = NULL;
+    //session->start_time = 0;
 }
 
 void

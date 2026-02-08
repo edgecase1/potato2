@@ -8,9 +8,10 @@ struct _session
      char session_id[LEN_SESSION];
 } typedef t_session;
 
-char* create_session(); // returns session id
+t_session* create_session(); // returns session id
 void destroy_session(t_session* session);
 t_session* get_session_by_id(char* id);
 int is_valid_session(const char *session_id);
-t_session* get_tmp_session();
 void print_sessions();
+char* add_session(t_session* tmp_session);
+void generate_session_id(char *buffer);

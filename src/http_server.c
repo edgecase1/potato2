@@ -81,19 +81,19 @@ void handle_login(int client_sock, const char *body) {
     get_form_value(body, "password", password);
     char* session_id;
 
-    t_session* tmp_session = get_tmp_session();
+    t_session* tmp_session = create_session();
     LOG("login attempt");
     if (login(tmp_session, username, password) != -1) {
         // Accept any credentials
     	LOG("login via HTTP successful");
-        session_id = create_session(tmp_session);
+        add_session(tmp_session);
     	LOG("session active");
 
         char response[256];
         snprintf(response,
 		 sizeof(response),
                  "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nSet-Cookie: session=%s\r\n\r\nauthentication successful", 
-		 session_id);
+		 tmp_session->session_id);
 	LOG("sending response");
         send(client_sock, response, strlen(response), 0);
     } else {

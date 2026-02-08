@@ -10,7 +10,7 @@
 #define is_authenticated() _is_authenticated(console_session->logged_in_user)
 
 // globals
-t_session *console_session;
+t_session *console_session = NULL;
 
 int
 _is_privileged(t_user* user)
@@ -57,11 +57,8 @@ console_login()
     fgets(input_password, PASSWORD_LENGTH, stdin);
     input_password[strcspn(input_password, "\n")] = 0x00;
 
-    t_session tmp_session;
-    if(login(&tmp_session, input_username, input_password) != -1)
+    if(login(console_session, input_username, input_password) != -1)
     {
-	create_session(&tmp_session);
-	console_session = &tmp_session;
         fprintf(stdout, "Authentication successful.\n");
     }
     else
@@ -137,6 +134,7 @@ console_delete_user()
 void
 console_list_users()
 {
+    puts("console_list_user");
     walk_list(print_list_element);
 }
 
@@ -165,27 +163,32 @@ print_usage()
      printf("> login\t\tauthenticate a user\n");
      printf("> logout\t\tdestroy the current session\n");
      printf("\n");
-     printf("functions as authenticated user\n");
+     printf("user functions (authenticated user)\n");
      printf("> whoami\t\tshow user id\n");
      printf("> changepw\t\tchange the password\n");
      printf("> changename\t\tchange the username\n");
      printf("> shell\t\tstart the shell in the user profile\n");
      printf("\n");
-     printf("system functions:\n");
+     printf("system functions (unprivileged):\n");
      printf("> list\t\tshow all registered users\n");
+     printf("> exit\t\tclose the program/connection\n");
+     printf("\n");
+     printf("system functions (privileged):\n");
      printf("> delete\t\tdelete a user\n");
      printf("> sessions\t\tlist the sessions\n");
      printf("> read\t\tparse the 'userlist' file\n");
      printf("> write\t\twrite out the 'userlist' file\n");
      printf("> purge\t\tempty the userlist\n");
      printf("> debug\t\tshow the userlist data structure\n");
-     printf("> exit\t\tclose the program/connection\n");
 }
 
 void
 handle_client()
 {
-    char command[255];
+    char command[255]; 
+
+    console_session = create_session();
+    add_session(console_session);
 
     printf("handle_client");
     while(1) {

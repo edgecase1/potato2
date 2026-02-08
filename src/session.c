@@ -19,9 +19,17 @@ t_session* sessions[MAX_SESSIONS];
 pthread_mutex_t session_mutex = PTHREAD_MUTEX_INITIALIZER;
 int session_count = 0;
 
-t_session* get_tmp_session()
+t_session* create_session()
 {
-    return (t_session *)malloc(sizeof(t_session));
+    char session_id[LEN_SESSION];
+
+    t_session* tmp_session = (t_session *)malloc(sizeof(t_session));
+    tmp_session->logged_in_user = NULL;
+    tmp_session->start_time = 0; // TODO time
+    generate_session_id(tmp_session->session_id);
+    //strncpy(sessions[session_count]->session_id, session_id, LEN_SESSION-1);
+
+    return tmp_session;
 }
 
 void generate_session_id(char *buffer) {
@@ -32,21 +40,15 @@ void generate_session_id(char *buffer) {
     buffer[LEN_SESSION - 1] = '\0';
 }
 
-char* create_session(t_session* tmp_session)
+char* add_session(t_session* tmp_session)
 {
-    char session_id[LEN_SESSION];
-
-    generate_session_id(session_id);
-    LOG("generate session");
-
     pthread_mutex_lock(&session_mutex);
     if (session_count < MAX_SESSIONS) {
 	session_count++;
 	sessions[session_count] = tmp_session;
-        strncpy(sessions[session_count]->session_id, session_id, LEN_SESSION-1);
     }
-    LOG("sessioni ready.");
     pthread_mutex_unlock(&session_mutex);
+    LOG("sessioni ready.");
     return sessions[session_count]->session_id;
 }
 
@@ -62,6 +64,8 @@ t_session* get_session_by_id(char* session_id)
 
 void destroy_session(t_session* session)
 {
+    free(session);
+    session = NULL;
 }
 
 int is_valid_session(const char *session_id) {
