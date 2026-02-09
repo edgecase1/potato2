@@ -12,7 +12,7 @@ RUN groupadd -g 22222 potato
 WORKDIR /app
 COPY --from=builder /build/potato .
 #COPY --from=builder rootfs .
-COPY userlist .
+COPY --chmod=0640 userlist .
 COPY index.html login.html run.html .
 
 EXPOSE 222

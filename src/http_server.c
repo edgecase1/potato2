@@ -175,22 +175,30 @@ void handle_run(int client_sock, const char *body) {
 
 void* handle_http_client(void *arg) {
     int client_sock = *(int *)arg;
+    size_t size = 0;
     free(arg);
 
     char buffer[BUF_SIZE] = {0};
     read(client_sock, buffer, BUF_SIZE - 1); // maybe too small
     char method[8], path[128];
     sscanf(buffer, "%s %s", method, path);
-    fprintf(stderr, "method: %s path %s\n",
+    fprintf(stderr, "method: '%s' path '%s'\n",
 		    method,
 		    path);
 
     if(strcmp(method, "GET")==0)
     {
-        if (strcmp(path, "/login") == 0)
+	if (strcmp(path, "/") == 0)
+	{	
+            LOG("GET index");
+            char *file_contents = read_file("index.html", &size);
+            send(client_sock, file_contents, strlen(file_contents), 0);
+            close(client_sock);
+            return NULL;
+        }
+	else if (strcmp(path, "/login") == 0)
 	{
             LOG("GET /login");
-	    size_t size = 0;
             char *file_contents = read_file("login.html", &size);
             send(client_sock, file_contents, strlen(file_contents), 0);
             close(client_sock);
@@ -198,12 +206,13 @@ void* handle_http_client(void *arg) {
         }
 	else if (strcmp(path, "/run") == 0)
 	{
-	    size_t size = 0;
+            LOG("GET /run");
             char *file_contents = read_file("run.html", &size);
             send(client_sock, file_contents, strlen(file_contents), 0);
             close(client_sock);
             return NULL;
 	}
+
     }
     else if(strcmp(method, "POST")==0)
     {
