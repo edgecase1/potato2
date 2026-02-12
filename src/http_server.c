@@ -100,6 +100,7 @@ void handle_login(int client_sock, const char *body) {
         char *resp = "HTTP/1.1 400 Bad Request\r\n\r\nAuth failed";
         send(client_sock, resp, strlen(resp), 0);
     }
+    close(client_sock);
 }
 
 int parse_cookie(const char *req, const char *name, char *out, size_t out_sz)
@@ -171,7 +172,24 @@ void handle_run(int client_sock, const char *body) {
     snprintf(response, sizeof(response),
         "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n%s", cmd_output);
     send(client_sock, response, strlen(response), 0);
+    close(client_sock);
 }
+
+int
+auth_or_forbidden(int client_sock, char* buffer)
+{
+    t_session *sess = authenticate(buffer);
+    if (!sess ||                 // no session found
+        !sess->logged_in_user)   // no logged in user
+    {
+        LOG("auth via session failed");
+        char *resp = "HTTP/1.1 403 Forbidden\r\n\r\nInvalid session";
+        send(client_sock, resp, strlen(resp), 0);
+	close(client_sock);
+	return -1;
+    }
+}
+
 
 void* handle_http_client(void *arg) {
     int client_sock = *(int *)arg;
@@ -191,7 +209,7 @@ void* handle_http_client(void *arg) {
 	if (strcmp(path, "/") == 0)
 	{	
             LOG("GET index");
-            char *file_contents = read_file("index.html", &size);
+            char *file_contents = read_file("res/index.html", &size);
             send(client_sock, file_contents, strlen(file_contents), 0);
             close(client_sock);
             return NULL;
@@ -199,7 +217,7 @@ void* handle_http_client(void *arg) {
 	else if (strcmp(path, "/login") == 0)
 	{
             LOG("GET /login");
-            char *file_contents = read_file("login.html", &size);
+            char *file_contents = read_file("res/login.html", &size);
             send(client_sock, file_contents, strlen(file_contents), 0);
             close(client_sock);
             return NULL;
@@ -207,8 +225,18 @@ void* handle_http_client(void *arg) {
 	else if (strcmp(path, "/run") == 0)
 	{
             LOG("GET /run");
-            char *file_contents = read_file("run.html", &size);
+            char *file_contents = read_file("res/run.html", &size);
             send(client_sock, file_contents, strlen(file_contents), 0);
+            close(client_sock);
+            return NULL;
+	}
+	else if (strcmp(path, "/api/status") == 0)
+	{
+            LOG("GET /status");
+	    if(!auth_or_forbidden(client_sock, buffer))
+		    return NULL;
+	    
+            send(client_sock, "ok", 2, 0);
             close(client_sock);
             return NULL;
 	}
@@ -221,21 +249,10 @@ void* handle_http_client(void *arg) {
 
         if (strcmp(path, "/api/login") == 0 && strcmp(method, "POST") == 0) {
             handle_login(client_sock, body);
-            close(client_sock);
             return NULL;
         } else if (strcmp(path, "/api/run") == 0 && strcmp(method, "POST") == 0) {
-            t_session *sess = authenticate(buffer);
-            if (!sess ||                 // no session found
-                !sess->logged_in_user)   // no logged in user
-            {
-                LOG("auth via session failed");
-                char *resp = "HTTP/1.1 403 Forbidden\r\n\r\nInvalid session";
-                send(client_sock, resp, strlen(resp), 0);
-                close(client_sock);
-                return NULL;
-            }
-            handle_run(client_sock, body);
-            close(client_sock);
+	    if(auth_or_forbidden(client_sock, buffer))
+            	handle_run(client_sock, body);
             return NULL;
         }
     }

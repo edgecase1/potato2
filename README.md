@@ -78,6 +78,14 @@ Since the program changes namespaces it is harder to debug. The easierst way to 
 # Hints
 There is a Python program `pwn_potato2.py` boiler-plate for pwntools. The necessary requirements are `pip install pwntools`.
 
+# Pwn
 
+```
+virtualenv venv
+. ./venv/bin/activate
+pip install pwntools
+git clone https://github.com/hugsy/gef.git
+echo source `pwd`/gef/gef.py >> ~/.gdbinit
+```
 
 
