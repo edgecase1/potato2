@@ -97,7 +97,7 @@ void handle_login(int client_sock, const char *body) {
 	LOG("sending response");
         send(client_sock, response, strlen(response), 0);
     } else {
-        char *resp = "HTTP/1.1 400 Bad Request\r\n\r\nAuth failed";
+        char *resp = "HTTP/1.1 401 Unauthorized\r\n\r\nAuth failed";
         send(client_sock, resp, strlen(resp), 0);
     }
     close(client_sock);
@@ -148,7 +148,7 @@ authenticate(char* req)
     }
     
     LOG("auth via session successful.");
-    fprintf(stderr, "Session ID %s user %d\n", 
+    fprintf(stderr, "Session %s user %d\n", 
 		    sess->session_id, 
 		    sess->logged_in_user->id);
     return sess;
@@ -157,10 +157,9 @@ authenticate(char* req)
 void handle_run(int client_sock, const char *body) {
     LOG("run command request");
     char command[255];
-    char cmd_output[4096] = {0};
+    char cmd_output[4096*10] = {0};
     get_form_value(body, "command", command);
-    fprintf(stderr, "command=%s", 
-		    command);
+    fprintf(stderr, "command=%s\n", command);
     FILE *fp = popen(command, "r");
     if (fp)
     {
@@ -168,9 +167,10 @@ void handle_run(int client_sock, const char *body) {
         pclose(fp);
     }
     LOG("command finished creating response");
-    char response[5000];
+    char response[4096*10+512] = {0};
     snprintf(response, sizeof(response),
-        "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n%s", cmd_output);
+        "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n%s", 
+	cmd_output);
     send(client_sock, response, strlen(response), 0);
     close(client_sock);
 }

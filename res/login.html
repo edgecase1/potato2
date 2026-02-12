@@ -37,15 +37,22 @@
            method: 'POST',
            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
            body: formData
-         }).then(res => res.text()) // or res.json() if JSON response
-           .then(text => {
-               localStorage.setItem('window', 'command');
-               console.log(text);
-	       window.location.replace("/run");
-	   })
-           .catch(err => {
+	 }).then(res => { 
+             console.log(res.status);
+	     if(res.status == 401) {
+	         console.log("unauthorized")
+		 return res.text();
+	     } else if(res.status == 200) {
+                 console.log("command executed successfully");
+	         window.location.replace("/run");
+	     } else {
+	         console.error("undefined error")
+	     }
+	 }).then(text => {
+              alert(text);
+	 }).catch(err => {
                console.log('Error: ' + err);
-           });
+         });
      });
   </script>
 </body>
