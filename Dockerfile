@@ -13,7 +13,7 @@ WORKDIR /app
 COPY --from=builder /build/potato .
 #COPY --from=builder rootfs .
 COPY --chmod=0640 userlist .
-COPY res/ .
+COPY res /app/res
 
 EXPOSE 222
 ENTRYPOINT ["./potato"]
