@@ -26,10 +26,11 @@ shell(t_user* user)
        	     user->home); 
     fflush(stdout);
 
-    arg.home = user->home;
+    strncpy(arg.name, user->name, strlen(user->name)+1);
+    strncpy(arg.home, user->home, strlen(user->home)+1);
     arg.id = user->id;
     arg.gid = 22222;
-    strncpy(arg.proc, user->shell, strlen(user->shell));
+    strncpy(arg.proc, user->shell, strlen(user->shell)+1);
 
     printf("cloning a new child\n");
     pid = runr_start(&arg); // this runs the shell in a container

@@ -52,13 +52,14 @@ char* add_session(t_session* tmp_session)
     return sessions[session_count]->session_id;
 }
 
-t_session* get_session_by_id(char* session_id)
+t_session* get_session_by_id(const char* session_id)
 {
-    for (int i = 0; i < MAX_SESSIONS; i++) {
-	if(sessions[i] == NULL || sessions[i]->session_id == NULL) continue;
-        if (strncmp(sessions[i]->session_id, session_id, LEN_SESSION) == 0) {
+    for (int i = 0; i < MAX_SESSIONS; i++) 
+    {
+	if(sessions[i] == NULL || sessions[i]->session_id == NULL) 
+		continue;
+        if (strncmp(sessions[i]->session_id, session_id, LEN_SESSION) == 0) 
             return sessions[i]; // TOCTOU
-        }
     }
 }
 
@@ -68,7 +69,8 @@ void destroy_session(t_session* session)
     session = NULL;
 }
 
-int is_valid_session(const char *session_id) {
+int is_valid_session(const char *session_id) 
+{
     return get_session_by_id(session_id) != NULL;
 }
 

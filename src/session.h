@@ -10,7 +10,7 @@ struct _session
 
 t_session* create_session(); // returns session id
 void destroy_session(t_session* session);
-t_session* get_session_by_id(char* id);
+t_session* get_session_by_id(const char* session_id);
 int is_valid_session(const char *session_id);
 void print_sessions();
 char* add_session(t_session* tmp_session);
