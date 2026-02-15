@@ -1,5 +1,6 @@
 
-docker run --init \
+docker run --name potato \
+           --init \
 	   -ti \
 	   -p 80:80 \
 	   --network=host \

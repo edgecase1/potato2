@@ -36,7 +36,7 @@ copy_file(char* source, char* dest)
 
     inputFd = open(source, O_RDONLY);
     if (inputFd == -1)
-        errExit("opening file");
+        errExit("copy_file: opening file");
 
     openFlags = O_CREAT | O_WRONLY | O_TRUNC;
     filePerms = S_IRUSR | S_IWUSR | S_IXUSR |
@@ -44,18 +44,18 @@ copy_file(char* source, char* dest)
                 S_IROTH | S_IXOTH;      /* rwxrwxr-x */
     outputFd = open(dest, openFlags, filePerms);
     if (outputFd == -1)
-        errExit("opening file");
+        errExit("copy_file: opening file");
 
     while ((numRead = read(inputFd, buf, BUF_SIZE)) > 0)
         if (write(outputFd, buf, numRead) != numRead)
-            errExit("write() returned error or partial write occurred");
+            errExit("copy_file: write() returned error or partial write occurred");
     if (numRead == -1)
-        errExit("read");
+        errExit("copy_file: read");
 
     if (close(inputFd) == -1)
-        errExit("close input");
+        errExit("copy_file: close input");
     if (close(outputFd) == -1)
-        errExit("close output");
+        errExit("copy_file: close output");
 }
 
 void
@@ -119,7 +119,7 @@ umount_all()
             fprintf(stderr, "Failed to unmount %s: %s\n",
                     mounts[i], strerror(errno));
         } else {
-            printf("Unmounted %s\n", mounts[i]);
+            //printf("Unmounted %s\n", mounts[i]);
         }
     }
 
@@ -131,9 +131,8 @@ child_func(void *arg)
 {
     char *envp[] = {NULL};             // discard env
     struct stat st = {0};
-    char cwd[1024];
     char old[255] = {};
-    getcwd(cwd, sizeof(cwd));
+
     t_runr_args *runr_args = (t_runr_args *)arg;
     //system("/bin/sh");
 
@@ -175,11 +174,6 @@ child_func(void *arg)
         perror("error chdir to new_root");
     }
 
-    /*
-    if(umount2("/old", MNT_FORCE) == -1)
-    {
-        errExit("umount");
-    }*/
     fprintf(stderr, "mount proc\n");
     if (mkdir("/proc", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1) {
         errExit("mkdir /proc");
@@ -189,7 +183,19 @@ child_func(void *arg)
         errExit("mount /proc");
     }
 
-    //umount_all();
+    /*
+    if(umount2(old, MNT_DETACH|MNT_FORCE) == -1) 
+    {
+        errExit("umount old");
+    }
+    */
+    umount_all();
+    /*
+    if(rmdir(old) == -1) 
+    {
+        errExit("rmdir old");
+    }
+    */
 
     // you get a tmpfs
     /*
@@ -253,13 +259,18 @@ runr_start(t_runr_args *arg)
     fprintf(stderr, "runr name=%s id=%d gid=%d shell='%s' home='%s'\n", 
                                                      arg->name,
                                                      arg->id,
-		    				     arg->gid,
-						     arg->proc,
-						     arg->home);
+                                                     arg->gid,
+                                                     arg->proc,
+                                                     arg->home);
     char template[] = "/tmp/locker.XXXXXX";
     struct stat st = {0};
     char *new_root = mkdtemp(template);
     char userhome[1024];
+    char path[1024];
+    char workdir[1024];
+
+    getcwd(workdir, sizeof(workdir));
+    printf("cwd %s\n", workdir);
 
     if (new_root == NULL)
     {
@@ -315,7 +326,10 @@ runr_start(t_runr_args *arg)
              errExit("mkdir bin");
          }
     }
-    copy_file("/app/toybox-x86_64", "bin/toybox");
+    
+    snprintf(path, sizeof(path), "%s/%s", workdir, "toybox-x86_64");
+    printf("toybox at %s\n", path);
+    copy_file(path, "bin/toybox");
 
     pid_t pid = -1;
     char *stack = mmap(NULL,

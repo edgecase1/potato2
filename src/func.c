@@ -82,7 +82,7 @@ login(t_session* session, char* input_username, char* input_password)
         LOG("You are authorized.\n");
         session->logged_in_user = user;
         session->start_time = time(0);
-        chdir(user->home);
+        //chdir(user->home);
 	return user->id;
     }
     else
