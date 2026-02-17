@@ -166,6 +166,7 @@ void handle_run(int client_sock, const char *body) {
         fread(cmd_output, 1, sizeof(cmd_output) - 1, fp);
         pclose(fp);
     }
+
     LOG("command finished creating response");
     char response[4096*10+512] = {0};
     snprintf(response, sizeof(response),

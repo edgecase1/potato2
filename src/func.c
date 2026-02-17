@@ -16,7 +16,6 @@ void
 shell(t_user* user)
 {
     t_runr_args arg;
-    char child_stack[STACK_SIZE];
     pid_t pid = -1;
 
     fprintf(stdout, "starting shell '%s'. Name '%s' User ID %d, home '%s' ...\n", 
