@@ -1,5 +1,6 @@
 
 docker run --name potato \
+	   --rm \
            --init \
 	   -ti \
 	   -p 80:80 \
