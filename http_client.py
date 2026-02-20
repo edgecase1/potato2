@@ -41,9 +41,12 @@ class PotatoClient:
 if __name__ == "__main__":
     # Change credentials and command as needed
     #session = login("user", "XXX")
-    c = PotatoClient()
-    if c.login("peter", "12345"):
-        c.run_command("uname -a")
-        c.run_command("id")
-        #c.run_command("ps faux")
-        #c.run_command("ls -la /")
+    try:
+        c = PotatoClient()
+        if c.login("peter", "12345"):
+            c.run_command("uname -a")
+            c.run_command("id")
+            #c.run_command("ps faux")
+            #c.run_command("ls -la /")
+    except requests.exceptions.ConnectionError:
+        print("connection error. Is it running?")

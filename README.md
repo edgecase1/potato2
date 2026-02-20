@@ -128,10 +128,11 @@ I recommend to use Virtualenv to manage the Python-pip dependencies.
 ```
 virtualenv venv
 . ./venv/bin/activate
-pip install pwntools
+pip install pwntools requests
 git clone https://github.com/hugsy/gef.git
 echo source `pwd`/gef/gef.py >> ~/.gdbinit
 ```
 
+There is `http_client.py` that tests the web server functions.
 
 
