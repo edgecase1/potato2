@@ -16,10 +16,10 @@ The users are stored in the `userlist` file using a `passwd`-like structure alon
 The default user is `peter` using password `12345`.
 The system works session-based: each authenticated user is assigned a session-ID; the web server accepts session-IDs via a Cookie value `session`.
 
-## Build the Container Image
+## Build and Run the Container Image
 
 Start the build process via `./build.sh` (the process is tested on Linux x86\_64).
-This starts a two-stage build-process for 1) building `potato2` using gcc and 2) creating the container image.
+This starts a two-stage build-process for 1) building `potato` using gcc and 2) creating the container image.
 ```
 └─$ ./build.sh                 
 [+] Building 51.3s (12/18)                                                                    docker:default
@@ -38,11 +38,9 @@ This starts a two-stage build-process for 1) building `potato2` using gcc and 2)
  => exporting to image                                                                                  1.2s 
  => => exporting layers                                                                                 1.1s
  => => writing image sha256:93afdde168695f008ae93736ef25566fb98da79ac9418bb3896027641a14e491            0.0s
- => => naming to docker.io/library/potato2   ```
+ => => naming to docker.io/library/potato   ```
 ```
-The resulting image is `docker.io/library/potato2` or `potato2 for short.
-
-## Run Container Image
+The resulting image is `docker.io/library/potato` or `potato for short.
 
 After the build-process of the image we can start the server via `./run.sh http`.
 This should start the server using the host's network and pid namespace, to naturally integrate into the system, but without tainting the underlying Linux system with dependencies.
@@ -59,7 +57,7 @@ The other modes are `./run.sh server` and `./run.sh console`.
 
 The web server should now be reachable at `http://localhost/login` and via console.
 
-## Manual Building
+## Manual Build and Execution
 
 The program can be build in the `src` folder with `make`. This creates the `potato` program in the `src` directory.
 
@@ -116,10 +114,13 @@ The web server accessible via `http://localhost/` provides the following endpoin
 ![run command](/docs/images/run.png)
 
 ### Network mode
-The same program code runs in the code and opens port 222. Any socket client can connect the the application.
+
+The program can provide port 222 and serving the same functionality.
+Any socket client can connect the the application.
 ```
 nc -v 127.0.0.1 222
 ```
+
 ## Hints
 There is a Python program `pwn_potato2.py` boiler-plate for pwntools. 
 The necessary requirements are `pip install pwntools`.

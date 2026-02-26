@@ -1,2 +1,2 @@
 
-docker build -t potato2 .
+docker build -t potato .

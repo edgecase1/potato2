@@ -14,8 +14,8 @@ COPY --from=builder /build/potato .
 #COPY --from=builder rootfs .
 COPY --chmod=0640 userlist .
 COPY res /app/res
-#RUN mkdir -p /var/lib/locker/dist/bin /var/lib/locker/dist/home &&  curl -o /var/lib/locker/dist/bin/toybox "https://landley.net/bin/toybox/latest/toybox-x86_64" && chmod +x /var/lib/locker/dist/bin/toybox
-COPY toybox-x86_64 /app
+RUN curl -o /app/toybox-x86_64 "https://landley.net/bin/toybox/latest/toybox-x86_64" && chmod +x /app/toybox-x86_64
+#COPY toybox-x86_64 /app
 
 EXPOSE 222
 ENTRYPOINT ["./potato"]

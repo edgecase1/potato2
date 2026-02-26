@@ -59,9 +59,10 @@ copy_file(char* source, char* dest)
 }
 
 void
-passwd_add(char* name, int id, int gid, char* home)
+passwd_add(char* name, int id, int gid, char* home, char* path)
 {
-    FILE* fp = fopen("etc/passwd", "a");
+    fprintf(stderr, "passwd at %s\n", path);
+    FILE* fp = fopen(path, "w");
     if (!fp) {
         errExit("write /etc/passwd");
     }
@@ -74,9 +75,10 @@ passwd_add(char* name, int id, int gid, char* home)
 }
 
 void
-group_add2(char* name, int gid)
+group_add2(char* name, int gid, char* path)
 {    
-    FILE* fp = fopen("etc/group", "w");
+    fprintf(stderr, "group at %s\n", path);
+    FILE* fp = fopen(path, "a");
     if (!fp) {
         errExit("write /etc/group");
     }
@@ -149,7 +151,7 @@ child_func(void *arg)
         errExit("mount-MS_PRIVATE");
     }
 
-    snprintf(old, sizeof(old), "%s/%s", runr_args->root, "old"); // old directory path
+    snprintf(old, sizeof(old), "%s/old", runr_args->root); // old directory path
     fprintf(stderr, "old dir '%s'\n", old);
     if (stat(old, &st) == -1)
     {
@@ -174,14 +176,6 @@ child_func(void *arg)
         perror("error chdir to new_root");
     }
 
-    fprintf(stderr, "mount proc\n");
-    if (mkdir("/proc", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1) {
-        errExit("mkdir /proc");
-    }
-    if (mount("proc", "/proc", "proc", 0, NULL) == -1)
-    {
-        errExit("mount /proc");
-    }
 
     /*
     if(umount2(old, MNT_DETACH|MNT_FORCE) == -1) 
@@ -193,9 +187,17 @@ child_func(void *arg)
     /*
     if(rmdir(old) == -1) 
     {
-        errExit("rmdir old");
+        /rrExit("rmdir old");
     }
     */
+    fprintf(stderr, "mount proc\n");
+    if (mkdir("/proc", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1) {
+        errExit("mkdir /proc");
+    }
+    if (mount("proc", "/proc", "proc", 0, NULL) == -1)
+    {
+        errExit("mount /proc");
+    }
 
     // you get a tmpfs
     /*
@@ -212,6 +214,7 @@ child_func(void *arg)
 
     // set persmissions and chdir into it
     fprintf(stderr, "chown home\n");
+    // TODO create home?
     chown(runr_args->home,  
 	  runr_args->id, 
 	  runr_args->gid);
@@ -249,7 +252,7 @@ child_func(void *arg)
     //char* exec_args[] = {runr_args->proc, 0};
     //execve(exec_args[0], exec_args, envp);     // Execute shell
     char* exec_args[] = {"/bin/toybox", "sh", 0};
-    fprintf(stderr, "exec %s\n", exec_args[0]);
+    fprintf(stderr, "exec %s\n", exec_args[1]);
     execve(exec_args[0], exec_args, envp);     // Execute shell
 }
 
@@ -265,13 +268,12 @@ runr_start(t_runr_args *arg)
     char template[] = "/tmp/locker.XXXXXX";
     struct stat st = {0};
     char *new_root = mkdtemp(template);
-    char userhome[1024];
     char path[1024];
     char workdir[1024];
 
     getcwd(workdir, sizeof(workdir));
     printf("cwd %s\n", workdir);
-
+    printf("mkdtemp at %s\n", new_root);
     if (new_root == NULL)
     {
         errExit("mkdtemp: error: Cannot create tmp directory");   
@@ -283,53 +285,65 @@ runr_start(t_runr_args *arg)
     fprintf(stderr, "temp dir %s\n", new_root);
     strncpy(arg->root, new_root, strlen(new_root)+1);
 
+    /*
     if(chdir(new_root) == -1)
     {
         errExit("chdir new_root");	 
-    }
+    }*/
 
-    fprintf(stderr, "etc\n");
-    if (mkdir("etc", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1)
+    snprintf(path, sizeof(path), "%s/etc", new_root);
+    fprintf(stderr, "etc (%s)\n", path);
+    if (mkdir(path, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1)
     {
         errExit("etc dir");
     }
 
     fprintf(stderr, "group %s\n", arg->name);
-    group_add2(arg->name, arg->gid);
+    snprintf(path, sizeof(path), "%s/etc/group", new_root);
+    group_add2(arg->name, arg->gid, path);
 
     fprintf(stderr, "passwd\n");
-    passwd_add("root", 0, 0, "/root");
-    passwd_add(arg->name, arg->id, arg->gid, arg->home);
+    snprintf(path, sizeof(path), "%s/etc/passwd", new_root);
+    passwd_add("root", 0, 0, "/root", path);
+    passwd_add(arg->name, arg->id, arg->gid, arg->home, path);
 
 
     // home dir
     fprintf(stderr, "home\n");
-    if (stat("home", &st) == -1) // home must exist
+    snprintf(path, sizeof(path), "%s/home", new_root);
+    if (stat(path, &st) == -1) // home must exist
     {
-         if(mkdir("home", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1)
+         if(mkdir(path, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1)
          {
              errExit("mkdir home");
          }
     }
-    snprintf(userhome, sizeof(userhome), "home/%s", arg->name);
-    fprintf(stderr, "userhome=%s\n", userhome);
-    if(mkdir(userhome, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1)
+    snprintf(path, sizeof(path), "%s/home/%s", new_root, arg->name);
+    fprintf(stderr, "userhome=%s\n", path);
+    if(mkdir(path, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1)
     {
         errExit("mkdir userhome");
     }
 
     fprintf(stderr, "bin\n");
-    if (stat("bin", &st) == -1) // home must exist
+    snprintf(path, sizeof(path), "%s/bin", new_root);
+    if (stat(path, &st) == -1) // home must exist
     {
-         if(mkdir("bin", S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1)
+         if(mkdir(path, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1)
          {
              errExit("mkdir bin");
          }
     }
     
-    snprintf(path, sizeof(path), "%s/%s", workdir, "toybox-x86_64");
-    printf("toybox at %s\n", path);
-    copy_file(path, "bin/toybox");
+    char* toybox = "toybox-x86_64";
+    snprintf(path, sizeof(path), "%s/bin/toybox", new_root);
+    printf("copy toybox from %s to %s\n", toybox, path);
+    copy_file(toybox, path);
+    /*
+    if(link(toybox, path) != 0); // TODO security
+    {
+        errExit("link toybox");
+    }*/
 
     pid_t pid = -1;
     char *stack = mmap(NULL,
